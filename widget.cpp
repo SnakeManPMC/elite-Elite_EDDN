@@ -30,7 +30,7 @@ void Widget::OpenFile()
 	QDir directory(elite_path);
 	QStringList txtFilesAndDirectories = directory.entryList(nameFilter, QDir::NoFilter, QDir::NoSort);
 
-	//QFile file("D://Warez//Elite.Dangerous//eddn.archives.12-31-14//archive-markets-01.txt");
+	//QFile file("D://Elite.Dangerous//eddn.archives.12-31-14//archive-markets-01.txt");
 
 	int readlines = 0;
 
