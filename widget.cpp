@@ -25,7 +25,7 @@ Widget::~Widget()
 
 void Widget::OpenFile()
 {
-	QString elite_path = "D://Warez//Elite.Dangerous//eddn.archives.12-31-14";
+	QString elite_path = "D://Elite.Dangerous//eddn.archives.12-31-14";
 	QStringList nameFilter("archive-markets-*.txt");
 	QDir directory(elite_path);
 	QStringList txtFilesAndDirectories = directory.entryList(nameFilter, QDir::NoFilter, QDir::NoSort);
