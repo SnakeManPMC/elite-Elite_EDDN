@@ -15,6 +15,9 @@ public:
 	explicit Widget(QWidget *parent = 0);
 	~Widget();
 
+private slots:
+	void on_browseArchiveDir_clicked();
+
 private:
 	Ui::Widget *ui;
 
@@ -25,6 +28,8 @@ private:
 	QStringList Commodities;
 	QStringList SoftwareNames;
 	QStringList UploaderIDs;
+	QString pathToArchives;
+	void eddnStatistics();
 };
 
 #endif // WIDGET_H

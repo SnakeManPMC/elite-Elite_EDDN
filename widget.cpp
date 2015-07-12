@@ -1,6 +1,3 @@
-
-// TODO - add software name/version list, add username count (list too long)
-
 #include "widget.h"
 #include "ui_widget.h"
 
@@ -14,7 +11,7 @@ Widget::Widget(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	OpenFile();
+	setWindowTitle("Elite EDDN by PMC");
 }
 
 Widget::~Widget()
@@ -25,52 +22,44 @@ Widget::~Widget()
 
 void Widget::OpenFile()
 {
-	QString elite_path = "D://Elite.Dangerous//eddn.archives.12-31-14";
-	QStringList nameFilter("archive-markets-*.txt");
-	QDir directory(elite_path);
+	QStringList nameFilter("*.txt");
+	QDir directory(pathToArchives);
 	QStringList txtFilesAndDirectories = directory.entryList(nameFilter, QDir::NoFilter, QDir::NoSort);
-
-	//QFile file("D://Elite.Dangerous//eddn.archives.12-31-14//archive-markets-01.txt");
 
 	int readlines = 0;
 
+	QProgressDialog progressDialog(this);
+	progressDialog.setRange(0, txtFilesAndDirectories.size());
+	progressDialog.setWindowTitle(tr("Processing TXT files"));
+
 	for (int i = 0; i < txtFilesAndDirectories.size(); i++)
 	{
-		QFile file(elite_path + "\\" + txtFilesAndDirectories[i]);
+		QFile file(pathToArchives + "\\" + txtFilesAndDirectories[i]);
 		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 		{
 			QMessageBox::information(this, tr("Unable to open file"),
 			file.errorString());
 			return;
 		}
-
-		while (!file.atEnd())
+		else
 		{
-			QByteArray line = file.readLine();
-			readlines++;
-			parseJSON(line);
+			while (!file.atEnd())
+			{
+				QByteArray line = file.readLine();
+				readlines++;
+				parseJSON(line);
+			}
+
+			file.close();
+
+			ui->textEdit->append("txtFilesAndDirectories[" + QString::number(i) + "]: " + pathToArchives + "\\" + txtFilesAndDirectories[i]);
+			ui->textEdit->append("readlines: " + QString::number(readlines));
+			readlines = 0;
 		}
-
-		file.close();
-		ui->textEdit->append("txtFilesAndDirectories[" + QString::number(i) + "]: " + elite_path + "\\" + txtFilesAndDirectories[i]);
-		ui->textEdit->append("read and done!");
-		ui->textEdit->append("readlines: " + QString::number(readlines));
-		readlines = 0;
+		progressDialog.setValue(i);
+		progressDialog.setLabelText(tr("File %1 / %2").arg(i).arg(txtFilesAndDirectories.size()));
+		qApp->processEvents();
 	}
-
-	Systems.sort();
-	Stations.sort();
-	Commodities.sort();
-
-	ui->textEdit->append("Systems: " + QString::number(Systems.size()));
-	//for (int xx = 0; xx < Systems.size(); xx++) ui->textEdit->append(Systems[xx]);
-	ui->textEdit->append("Stations: " + QString::number(Stations.size()));
-	//for (int xc = 0; xc < Stations.size(); xc++) ui->textEdit->append(Stations[xc]);
-	ui->textEdit->append("Commodities: " + QString::number(Commodities.size()));
-	//for (int cx = 0; cx < Commodities.size(); cx++) ui->textEdit->append(Commodities[cx]);
-	ui->textEdit->append("Uploader Names: " + QString::number(UploaderIDs.size()));
-	ui->textEdit->append("SoftwareNames: " + QString::number(SoftwareNames.size()));
-	for (int sx = 0; sx < SoftwareNames.size(); sx++) ui->textEdit->append(SoftwareNames[sx]);
 }
 
 
@@ -134,41 +123,45 @@ void Widget::parseJSON(QByteArray line)
 	ui->textEdit->append(QString::number(sellPrice));
 	ui->textEdit->append(QString::number(stationStock));
 */
-/*
-	"buyPrice": 0,
-	"timestamp": "2014-12-30T00:38:33+00:00",
-	"stationStock": 0,
-	"systemName": "V1688 Aquilae",
-	"stationName": "Rangarajan Port",
-	"demand": 2882520,
-	"sellPrice": 1305,
-	"itemName": "Titanium"
-*/
 }
 
 
-/*
-{'header':
-{'softwareVersion': 'v0.3 test', 'softwareName': 'EliteOCRReader', 'uploaderID': 'abcdef0123456789'},
-'$schema': 'http://schemas.elite-markets.net/eddn/commodity/1', 'message':
-{'categoryName': u'', 'buyPrice': 102, 'timestamp': '2014-12-16T12:43:00', 'stationStock': 13672, 'systemName': 'SomeSystem', 'stationName': 'Azeban City [SomeSystem]', 'demand': 0, 'sellPrice': 101, 'itemName': 'Hydrogen Fuel'
-}}
-*/
+// browse EDDN archive directory
+void Widget::on_browseArchiveDir_clicked()
+{
+	QString fileName = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+							     "",
+							     QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+	if (fileName.isEmpty())
+	return;
+	else
+	{
+		pathToArchives = fileName;
+		ui->lineEdit->setText(pathToArchives);
 
-/*
-	QString str = "{"
-	" \"Herausgeber\": \"Xema\","
-	" \"Nummer\": \"1234-5678-9012-3456\","
-	" \"Deckung\": 2e+6,"
-	" \"Währung\": \"EURO\","
-	" \"Inhaber\": {"
-	" \"Name\": \"Mustermann\","
-	" \"Vorname\": \"Max\","
-	" \"männlich\": true,"
-	" \"Hobbys\": [ \"Reiten\", \"Golfen\", \"Lesen\" ],"
-	" \"Alter\": 42,"
-	" \"Kinder\": [],"
-	" \"Partner\": null"
-	" }"
-	"}";
-*/
+		// process the files, BIG LOAD on many files ;)
+		OpenFile();
+
+		// when done, run statistics
+		eddnStatistics();
+	}
+}
+
+
+// print statistics into textEdit box
+void Widget::eddnStatistics()
+{
+	Systems.sort();
+	Stations.sort();
+	Commodities.sort();
+
+	ui->textEdit->append("\n\nStatistics:\nSystems: " + QString::number(Systems.size()));
+	//for (int xx = 0; xx < Systems.size(); xx++) ui->textEdit->append(Systems[xx]);
+	ui->textEdit->append("Stations: " + QString::number(Stations.size()));
+	//for (int xc = 0; xc < Stations.size(); xc++) ui->textEdit->append(Stations[xc]);
+	ui->textEdit->append("Commodities: " + QString::number(Commodities.size()));
+	//for (int cx = 0; cx < Commodities.size(); cx++) ui->textEdit->append(Commodities[cx]);
+	ui->textEdit->append("Uploader Names: " + QString::number(UploaderIDs.size()));
+	ui->textEdit->append("SoftwareNames: " + QString::number(SoftwareNames.size()));
+	for (int sx = 0; sx < SoftwareNames.size(); sx++) ui->textEdit->append(SoftwareNames[sx]);
+}
